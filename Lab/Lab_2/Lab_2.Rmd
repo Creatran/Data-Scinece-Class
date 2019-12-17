@@ -1,0 +1,71 @@
+---
+title: "Lab_2"
+author: "Tianran Zhang"
+date: "10/23/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 1
+```{r}
+drg <- read.csv("DRG_data.csv")
+
+drg_aveBoxplot <- function(data, varx){
+  drg_new <- data %>%
+    mutate(drgCode = as.factor(substr(DRG.Definition, start = 1, stop = 3)))
+  
+  ggplot(data = drg_new, aes(y = get(varx),  x = drgCode)) + 
+  geom_boxplot(outlier.size = .1) + 
+  stat_boxplot(geom = "errorbar") + 
+  theme(legend.position = "none") + 
+  ggtitle("Average Medicare Payments by DRG code") + 
+  xlab("DRG code") + 
+  ylab("Average Total Payments") + 
+  coord_trans(y = 'log10') +
+  #scale_y_continuous(labels = drg$DRG.Definition) + 
+  theme(axis.text.y = element_text(size = 8),
+        axis.text.x = element_text(size = 6, angle = 90),
+        axis.title = element_text(size = 12),
+        plot.title = element_text(size = 16)) 
+}
+
+drg_aveBoxplot(drg, 'Average.Medicare.Payments')
+
+```
+
+# 2
+```{r}
+head(drg)
+drg_stat <- function(data, f){
+  drg_new <- data %>%
+    mutate(drgCode = as.factor(substr(DRG.Definition, start = 1, stop = 3))) 
+  as.numeric(drg_new$drgCode) %>% f
+}
+
+drg_stat(drg, sd)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

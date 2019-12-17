@@ -1,0 +1,203 @@
+---
+title: "Homework_2_TianranZhang"
+author: "Tianran Zhang"
+date: "9/25/2019"
+output: html_document
+---
+
+The github repository link is : https://github.com/Creatran/Homework_2.git
+
+# 1. Performed tasks with a single data verb
+## a. Find the average of one of the variables.  
+original_table %>%
+  summarise(m = mean(variable))
+
+## b. Add a new column that is the ratio between two variables.  
+mutate(original_table, r = variable1/variable2)  
+
+## c. Sort the cases in descending order of a variable.  
+arrange(desc(variable))  
+
+## d. Create a new data table that includes only those cases that meet a criterion  
+new_table <- filter(original_table, criterion1, criterion2, ...)  
+
+## e. Prodece a data frame that has the same cases but only the variables A and X.  
+new_table <- select(original_table, A, X)  
+
+# 2. Use the nycflights13 pacjage and the flights data frame to answer the following questions:
+
+```{r, include = FALSE}
+library(nycflights13)
+library(tidyverse)
+head(flights)
+```
+
+## a. What month had the highest proportion of cancelled flights?
+```{r}
+f1 <- flights %>%
+  mutate(cancelled = ifelse(is.na(dep_time), 1, 0)) %>%
+  group_by(month) %>%
+  summarise(cancelled_sum = sum(cancelled), N = n()) %>%
+  mutate(cancelled_prop = cancelled_sum/N) %>%
+  arrange(desc(cancelled_prop))
+  
+
+paste('The month ', f1$month[1], ' had the highest proportion of cancelled flights, and the rate is', round(f1$cancelled_prop[1]* 100, 1), '%')
+
+```
+
+## b. What month had the lowest?
+```{r}
+n <- nrow(f1)
+paste('The month ', f1$month[n], ' had the highest proportion of cancelled flights, and the rate is', round(f1$cancelled_prop[n]*100, 1), '%')
+```
+
+## c. Interpret any seasonal patterns with a graphic.
+```{r, warning=FALSE}
+# Consider the air time changes with day
+ggplot(data = flights, aes(x = time_hour, y = air_time)) + 
+  geom_smooth() + 
+  ggtitle("Air time changes against day") +
+  xlab("Month") +
+  ylab("Air Time") 
+```
+
+From the plot we can see that the air time change seasonaly, The time length turns shorter in summer and grows longer in winter.
+
+## d. What plane traveled the most times from New York City airports from 2013?
+```{r}
+f1 <- flights %>%
+  filter(is.na(tailnum) == FALSE) %>%
+  group_by(tailnum) %>%
+  summarise(N = n()) %>%
+  arrange(desc(N)) 
+
+head(f1, 1)
+
+```
+
+The plane N725MQ traveled the most times from New York City airports in 2013, with N = 575 flights. 
+
+## e. Plot the number of trips per week over the year.
+```{r}
+f2 <- flights %>%
+  mutate(weeknum = as.integer(strftime(time_hour, format = "%W"))) %>%
+  group_by(weeknum) %>%
+  summarise(n_trips = n())
+
+ggplot(data = f2) + 
+  geom_line(aes(x = weeknum, y = n_trips), color = 'blue') + 
+ # coord_trans(y = 'log10') + 
+  xlab("Week Number") + 
+  ylab("Number of Trips per week") + 
+  ggtitle("The number of trips per week")
+
+```
+
+The number of trips per week during the year were around 6500, except the first and the last week had a lower trip number. The first 2 weeks of the year have around 5200 trips per week, and the last one week of the year have around 1000 trips per week.
+
+# 3.
+## a. The oldest plane that flew from NYC airports in 2013
+```{r}
+head(planes)
+flights_dep <- flights %>%
+  filter(is.na(tailnum) == FALSE) %>%
+  group_by(tailnum) %>%
+  summarise()
+
+plane_nyc2013 <- left_join(flights_dep, planes, by = c("tailnum")) %>%
+  select(tailnum, year) %>%
+  arrange(year)
+head(plane_nyc2013, 2)
+```
+
+The oldest plane that flew from New York City airports in 2013 is the plane with tailnum N381AA, which is a plane born in 1956.
+
+## b. Number of airplanes flew from NYC included in the planes table
+```{r}
+nflights <- inner_join(flights_dep, planes, by = c("tailnum"))
+nrow(nflights)
+```
+There are 3322 airplanes that flew from New York City included in the planes table.
+
+## c. Number of planes with a missing manufacture date.
+```{r}
+planes %>%
+  filter(is.na(year)) %>%
+  mutate(N = n()) %>%
+  group_by(N) %>%
+  summarise() %>%
+  pull()
+
+```
+There are 70 planes in the planes table have a missing manufacture date.
+
+## d. The five most common manufacturers.
+```{r}
+planes %>%
+  group_by(manufacturer) %>%
+  summarise(N = n()) %>%
+  arrange(desc(N)) %>%
+  head(5)
+
+```
+
+The 5 most common manufacturers are BOEING, AIRBUS INDUSTRIE, BOMBARDIER INC, AIRBUS, EMBRAER.
+
+# 4. 
+```{r, include = FALSE}
+library(Lahman)
+library(RColorBrewer)
+head(Master)
+head(Batting)
+```
+
+```{r}
+Bat_players <- left_join(Master, Batting, by = c("playerID")) %>%
+  filter(yearID>=2000 & yearID <= 2009, is.na(bats) == FALSE) %>%
+  group_by(playerID, birthMonth) %>%
+  summarise()
+
+Bat_players$birthMonth <- factor(Bat_players$birthMonth)
+  
+ggplot(data = Bat_players, aes(x = birthMonth)) + 
+  geom_bar(fill = 'light blue') + 
+  xlab("Birth Month") + 
+  ylab("Number of players who batted") + 
+  ggtitle("The distribution of birth months of baseball players")
+```
+
+The bar plot shows that baseball players who batted during the decades of 2000s have a high proportion with birth month at 8. Assume July is the age cut-off month for participation, and children who born in August have advanteges than others. We can see the number of players who born after July batted is bigger than the number of players who born before July. This means children born just after the age cut-off for participation do have an advantage compare to other players. So, this plot support the notion of a relative age affect.
+
+# 5.
+```{r, include=FALSE}
+library(mdsr)
+head(Violations)
+```
+
+
+```{r}
+Violations_score <- Violations %>%
+  filter(boro == 'MANHATTAN') %>%
+  mutate(score = ifelse(is.na(score), 0, score)) %>%
+  group_by(zipcode) %>%
+  summarise(inspection_num = n(), median_score = median(score)) %>%
+  filter(inspection_num >= 50)
+  
+ggplot(data = Violations_score) + 
+  geom_smooth(aes(x = inspection_num, y = median_score), color = 'red') + 
+  ylab("Median Score") + 
+  xlab("Number of Inspections") + 
+  ggtitle("Number of inspections to median score by zipcode")
+
+```
+
+The plot shows that as the number of inspections increase from 0 to 2500, the median score grows higher. As the number of inspections increase beyond 2500, the mean value of median score reach a stabilization at around 15.7, while the standard deviation of median score towards number of inspections becomes larger as the inspections number increases higher than 10000.
+
+
+
+
+
+
+
+

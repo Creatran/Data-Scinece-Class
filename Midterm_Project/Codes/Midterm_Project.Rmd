@@ -1,0 +1,15 @@
+---
+title: "Midterm_Project"
+author: 
+- name: "Zhuoer Li" 
+- name: "Matthew Mandeli"
+- name: "Tianran Zhang"
+date: "10/16/2019"
+output: html_document
+---
+
+## The Github repository for our project is:
+https://github.com/Creatran/Shiny-App-for-HVMC 
+
+## The shinyapps.io website for our Shiny App is:
+https://tianran.shinyapps.io/midterm_project/

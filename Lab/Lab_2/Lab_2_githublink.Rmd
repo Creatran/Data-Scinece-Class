@@ -1,0 +1,8 @@
+---
+title: "Lab_2"
+author: "Tianran Zhang"
+date: "10/23/2019"
+output: html_document
+---
+
+The github link to my R package is :"https://github.com/Creatran/drgLab"

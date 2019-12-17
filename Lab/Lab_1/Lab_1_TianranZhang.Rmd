@@ -1,0 +1,59 @@
+---
+title: "Lab_1"
+author: "Tianran Zhang"
+date: "9/25/2019"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r, include=FALSE}
+library(mdsr)
+namesdata <- make_babynames_dist()
+head(namesdata)
+```
+
+```{r}
+female_data <- namesdata %>%
+  filter(sex == 'F'& year >= 1900) %>%
+  mutate(died = n - est_alive_today) %>%
+  group_by(name) %>%
+  summarise(Total_num = sum(n), died_num = sum(died)) %>%
+  filter(Total_num >= 100000) %>%
+  mutate(died_percent = died_num/Total_num)%>%
+  arrange(desc(died_percent)) %>%
+  head(10)
+female_data["sex"] = 'F' 
+
+male_data <- namesdata %>%
+  filter(sex == 'M'& year >= 1900) %>%
+  mutate(died = n - est_alive_today) %>%
+  group_by(name) %>%
+  #summarise(Total_num = sum(n), died_num = sum(n * (1 - alive_prob))) %>%
+  summarise(Total_num = sum(n), died_num = sum(died)) %>%
+  filter(Total_num >= 100000) %>%
+  mutate(died_percent = died_num/Total_num)%>%
+  arrange(desc(died_percent)) %>%
+  head(10) 
+male_data["sex"] = 'M' 
+
+total_data <- rbind(female_data, male_data)
+total_data <- total_data %>%
+  mutate(label = (paste0(round(died_percent * 100, 1), '%')))
+```
+
+```{r}
+ggplot(data = total_data, aes(fill = sex, x = reorder(name, died_percent), y = died_percent, label = label)) + 
+  geom_bar(stat = 'identity') + 
+  coord_flip() + 
+  ggtitle("Deadest Names") + 
+  labs("Deadest Names", subtitle = 'Estimated percentage of Americans with a given name born \nsince 1990 who were deas as of Jan.1, 2014.') + 
+  geom_text(size = 3, position = position_stack(vjust = 1.05)) + 
+  theme(legend.position = 'none') + 
+  theme(axis.title = element_blank()) + 
+  theme(plot.title = element_text(size = 18)) + 
+  theme(axis.text.x = element_blank()) + 
+  scale_fill_brewer(palette = 'Accent')
+
+```
+

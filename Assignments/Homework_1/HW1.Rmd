@@ -1,0 +1,193 @@
+---
+title: "Homework_1"
+author: "TianranZhang"
+date: "9/18/2019"
+output:
+  html_document:
+    df_print: paged
+---
+The github repository is https://github.com/Creatran/Homework1.git
+
+# 1 Using the RailTrail data set from the mosaic package
+```{r, include = FALSE}
+library(mosaic)
+```
+```{r}
+head(RailTrail)
+```
+
+## a. Creat a scatterplot of the number of crossings per day(volume) against the high temperature that day. Color the points in the plot by the amount of precipitation.
+```{r}
+plot_a <- RailTrail %>%
+  ggplot(aes(x = hightemp, y = volume, color = precip)) + 
+  geom_point(alpha = .5) + 
+  scale_color_continuous(guide = guide_colorbar(title = 'Precipitation')) +
+  xlab('High temperature') + 
+  ylab('Number of crossings per day') + 
+  ggtitle('Volume against high temperature') + 
+  theme(plot.title = element_text(size = 20, hjust = .5)) + 
+  theme(axis.text = element_text(size = 10)) + 
+  theme(axis.title = element_text(size = 14)) +
+  theme(legend.title = element_text(size = 14))
+plot_a
+```
+
+## b. Separate the plot into facets by weekday
+```{r}
+weekday.labs <- c("Weekday", "Not Weekday")
+names(weekday.labs) <- c("FALSE", "TRUE")
+
+plot_b <- plot_a + 
+  facet_wrap(
+    ~ weekday, 
+    labeller = labeller(weekday = weekday.labs)
+  )
+plot_b
+```
+
+
+## c Add regression lines to the two facets
+```{r}
+plot_c <- plot_b + 
+  geom_smooth(se = FALSE) + 
+  geom_text(x = 55, y = 500, label = 'Regression line') + 
+  geom_curve(x = 55, xend = 62, y = 480, yend = 400, arrow = arrow(length = unit(3, 'mm')),
+             curvature = .5) 
+plot_c
+```
+
+## d. Interpretation of the three plots
+The number of crossings per day and high temperature seem to have a positive relationship. After seperating the plot by weekday and not weekday, and add regression lines to the two facets, the relationship seems clearer. 
+
+In weekdays, the number of crossings per day goes up as the high temperature increase. It reach its highest point when high temperature goes around 80, and then it starts to go down as temperature increases.
+
+In weekends, the number of crossings per day keeps going up as the high temperature increases. But the slope seems lower than that in weekday facet.
+
+
+# 2. Use MArriage data set from mosaic package.
+```{r}
+library(mosaic)
+head(Marriage)
+```
+
+## a. Creat an informative and meaningful data graphic
+```{r}
+library(tidyverse)
+Marriage_data <- Marriage 
+
+# set the education year = 0 if NA
+Marriage_data$college <- ifelse(is.na(Marriage_data$college) == TRUE, 0,
+                                Marriage_data$college)
+
+# calculate the total education year and set education levels
+Marriage_data <- Marriage_data %>%
+  mutate(edu_year = hs + college) %>%
+  mutate(edu_level = if_else(edu_year < 12, 'under high school', 
+                             if_else(edu_year == 12, 'high school', 
+                                     if_else(edu_year < 17, 'college',
+                                             'higher level college'))))
+# rank the 4 education levels
+Marriage_data$edu_level <- factor(Marriage_data$edu_level,
+                                  levels = c('under high school', 'high school', 
+                                             'college', 'higher level college'))
+
+# plot education levels against races, and seperate the plot into 2 facets by person.
+ggplot(data = Marriage_data) + 
+  geom_bar(aes(str_wrap(race, 5), fill = edu_level), stat = "count") + 
+  scale_fill_brewer(palette = 'Accent') + 
+  facet_wrap(~ person) + 
+  guides(fill = guide_legend(title = "Education Level"))+
+  xlab('Race') + 
+  ylab('Count') + 
+  ggtitle('Education level in different races') + 
+  theme(plot.title = element_text(size = 20, hjust = .5)) + 
+  theme(axis.text = element_text(size = 10)) + 
+  theme(axis.title = element_text(size = 14)) +
+  theme(legend.title = element_text(size = 14))
+```
+
+## b. Identify each of the visual ques  describe how they are related to each other.
+From the plot we can see that white people are most in the dataset. The largest proportion education level in White bride is college, while the largest proportion in White groom is high school. The smallest proportion in White bride is  higher level college while in White groom is under high school. Besides, White people is the only race that have 5 brides and 5 grooms with a higher level college education.
+
+Black people have more high school level than college level in brides, while people with college level are more than high school education in Grooms.
+
+There are only one American Indian and one Hispani in the dataset and they both have a college education level.
+
+# 3. Add a smooth trend line to the plot and change the coor of the line from the default color.
+```{r}
+library(macleish)
+head(whately_2015)
+library(date)
+
+# plot the temperature against time plot
+temp_change <- ggplot(data = whately_2015, aes(x = when, temperature)) + 
+  geom_point(size = .01, alpha = .7, color = 'lightblue') + 
+  # add a smooth line in red
+  geom_smooth(col = 'red') + 
+  ylab('Tempeture') + 
+  xlab("Time") + 
+  ggtitle("Temperature against Time") + 
+  theme(plot.title = element_text(size = 20, hjust = .5)) + 
+  theme(axis.text = element_text(size = 10)) + 
+  theme(axis.title = element_text(size = 14)) +
+  theme(legend.title = element_text(size = 14))
+temp_change
+```
+
+From the plot we can see that the temperature has a seasonal trend towards time. The temperature goes up in July and gets cold in January.
+
+#4
+## a
+```{r}
+library(nasaweather)
+head(storms)
+```
+
+```{r}
+Tropical_storms <- storms %>%
+  filter(type == 'Tropical Storm') 
+
+ggplot(data = Tropical_storms) +
+  geom_path(aes(x = long, y = lat, color = name)) +
+  facet_wrap(~ year, labeller = label_both) +
+  theme(legend.position = 'none') + 
+  xlab('longtitude') + 
+  ylab('latitude') + 
+  ggtitle('Path of each tropical storm') + 
+  theme(plot.title = element_text(size = 20, hjust = .5)) + 
+  theme(axis.text = element_text(size = 10)) + 
+  theme(axis.title = element_text(size = 14)) +
+  theme(legend.title = element_text(size = 14))
+  
+```
+
+
+## 4b Plot the storm 'Erin' on a map of the United States. 
+
+
+```{r}
+Storm_Erin <- storms %>%
+  filter(name == 'Erin') %>%
+  arrange(year, month, day)
+
+library(maps)
+states <- map_data("state")
+
+Erin_path <- ggplot(data = states) + 
+  geom_polygon(aes(x = long, y = lat, fill = region, group = group), color = "white") + 
+  coord_fixed(1.3) +
+  guides(fill=FALSE) + 
+  geom_path(data = Storm_Erin, aes(x = long, y = lat, color = wind), 
+            linejoin = "round", size = 1,arrow = arrow(length = unit(3, 'mm'))) + 
+  xlab("Longtitude") + 
+  ylab("Latitude") + 
+  ggtitle("Erin's path in US") + 
+  scale_color_continuous(guide = guide_colorbar(title = "Wind Speed")) + 
+  theme(plot.title = element_text(size = 20, hjust = .5)) + 
+  theme(axis.text = element_text(size = 10)) + 
+  theme(axis.title = element_text(size = 14)) +
+  theme(legend.title = element_text(size = 14))
+Erin_path
+```
+
+From the plot we can see the Erin's path on a map of the United States, and the color represent the wind speed.

@@ -1,0 +1,191 @@
+---
+title: "Homework_3"
+author: "Tianran Zhang"
+date: "10/7/2019"
+output: html_document
+---
+The github repository link is: https://github.com/Creatran/Homework_3.git
+
+```{r setup, include=FALSE}
+library(readxl)
+library(tidyverse)
+library(purrr)
+```
+
+# 1. Read in the data
+```{r}
+drg <- read.csv('DRG_data.csv')
+#head(drg)
+#names(drg)
+```
+
+# Q2
+```{r}
+drg_new <- drg %>%
+  mutate(drgCode = as.factor(substr(DRG.Definition, start = 1, stop = 3)))
+
+ggplot(data = drg_new, aes(y = Average.Medicare.Payments,  x = drgCode)) + 
+  geom_boxplot(outlier.size = .1) + 
+  stat_boxplot(geom = "errorbar") + 
+  theme(legend.position = "none") + 
+  ggtitle("Average Medicare Payments by DRG code") + 
+  xlab("DRG code") + 
+  ylab("Average Total Payments") + 
+  coord_trans(y = 'log10') +
+  #scale_y_continuous(labels = drg$DRG.Definition) + 
+  theme(axis.text.y = element_text(size = 8),
+        axis.text.x = element_text(size = 6, angle = 90),
+        axis.title = element_text(size = 12),
+        plot.title = element_text(size = 16)) 
+```
+
+The plot shows that most hospitals have the average medicare payments lower that 50000, and have a relative large range of mediare payments. Besides, as the drg code increases, the mean of average total payments change repeatly from low to high.
+
+# Q3
+```{r}
+ggplot(data = drg_new, aes(col = drgCode, x = drgCode, y = Average.Total.Payments,)) + 
+  geom_boxplot(outlier.size = .1) + 
+  #stat_boxplot(geom = "errorbar") + 
+  theme(legend.position = "none") + 
+  ggtitle("boxplot of the average total payments by DRG code") + 
+  xlab("DRG code") + 
+  ylab("Average Total Payments") + 
+  coord_trans(y = 'log10') +
+  #scale_y_continuous(labels = drg$DRG.Definition) + 
+  theme(axis.text.y = element_text(size = 8),
+        axis.text.x = element_text(size = 6, angle = 90),
+        axis.title = element_text(size = 12),
+        plot.title = element_text(size = 16)) 
+
+```
+
+The plot shows that most hospitals have the average medicare payments lower that 40000, and have a relative large range of mediare payments. Besides, as the drg code increases, the mean of average total payments change repeatly from low to high.  
+This plot has a similar shape as the plot in part 2, but the mean of average total payments by each drg code is smallar that that in part 2.
+
+# Q4
+```{r}
+drg_spread <- drg %>%
+  select(DRG.Definition, Provider.Id, Provider.State, Average.Medicare.Payments) %>%
+  spread(key = DRG.Definition, value = Average.Medicare.Payments)
+
+#drg_spread
+```
+
+# Q5
+```{r}
+n <- ncol(drg_spread)
+
+# For loop
+calculation_for <- data.frame()
+for (i in 3:ncol(drg_spread)){
+  calculation_for[i - 2, 'mean'] <- mean(drg_spread[, i], na.rm = TRUE)
+  calculation_for[i - 2, 'median'] <- median(drg_spread[, i], na.rm = TRUE)
+  calculation_for[i - 2, 'sd'] <- sd(drg_spread[, i], na.rm = TRUE)
+}
+calculation_for <- calculation_for %>%
+  mutate(drgCodes = names(drg_spread[3:ncol(drg_spread)]))
+
+# find the max and min value
+find_MaxMin <- function(df, varx){
+  max_value <- df %>%
+    arrange(desc(get(varx))) %>%
+    head(1)   
+  min_value <- df %>%
+    arrange(get(varx)) %>%
+    head(1)
+  #max_value <- max(df[get(varx)])
+  return(bind_rows(max_value, min_value))
+}
+
+find_MaxMin(calculation_for, 'mean')
+find_MaxMin(calculation_for, 'median')
+find_MaxMin(calculation_for, 'sd')
+  
+```
+
+`870 - SEPTICEMIA OR SEVERE SEPSIS W MV 96+ HOURS` has the max mean = 41899.433, max median = 38789.43, and max sd = 11766.8061,
+`310 - CARDIAC ARRHYTHMIA & CONDUCTION DISORDERS W/O CC/MCC` has the min mean = 2876.016, and min sd = 880.6649
+`313 - CHEST PAIN` has the min median = 2587.425
+
+
+# Q6
+
+```{r}
+# Calculate for max and min value
+max_min <- function(df){
+  max_df <- df[which.max(df)]
+  min_df <- df[which.min(df)]
+  return(c(max_df, min_df))
+}
+
+# Map
+map_fun <- function(df){
+  c(mean(df, na.rm = TRUE), median(df, na.rm = TRUE),
+    sd(df, na.rm = TRUE))
+}
+calculation_map <- bind_rows(map(drg_spread[3:102], map_fun))
+
+max_min(calculation_map[1,])
+max_min(calculation_map[2,])
+max_min(calculation_map[3,])
+
+# Apply
+calculation_apply <- data.frame(apply(drg_spread[3:102], MARGIN = 2, FUN = map_fun))
+                               
+max_min(calculation_apply[1,])
+max_min(calculation_apply[2,])
+max_min(calculation_apply[3,])
+```
+
+
+The map and apply statement is simplier than a for loop, and they all have the same result.
+
+# 7 NY
+```{r}
+# Find the most expensive average medicare payments
+find_provider <- function(data){
+  data %>%
+    arrange(desc(Average.Medicare.Payments)) %>%
+    select(DRG.Definition, Provider.Id, Average.Medicare.Payments) %>%
+    head(1)
+}
+
+find_providers <- function(data, varx, key){
+  data %>%
+    filter(get(varx) == key) %>%
+    group_by(Provider.State) %>%
+    do(find_provider(.))
+}
+
+# find New York Providers
+find_NY_Providers <- function(data1, data2){
+  inner_join(data1, data2, by = c('Provider.Id', 'Provider.State', 'DRG.Definition')) %>%
+  filter(Provider.State == 'NY') %>%
+  select(Provider.Name)
+}
+
+
+providers <- 
+  find_providers(drg, 'DRG.Definition', '870 - SEPTICEMIA OR SEVERE SEPSIS W MV 96+ HOURS')
+find_NY_Providers(drg, providers)
+
+k <- 5
+drg$DRG.Definition[k]
+providers <- 
+  find_providers(drg, 'DRG.Definition', drg$DRG.Definition[k])
+find_NY_Providers(drg, providers)
+
+k <- 16000
+drg$DRG.Definition[k]
+providers <- 
+  find_providers(drg, 'DRG.Definition', drg$DRG.Definition[k])
+find_NY_Providers(drg, providers)
+
+
+```
+The name of the most expensive provider in New York with DRG code '870 - SEPTICEMIA OR SEVERE SEPSIS W MV 96+ HOURS' is WESTCHESTER MEDICAL CENTER.  
+
+The name of the most expensive provider in New York with DRG code '039 - EXTRACRANIAL PROCEDURES W/O CC/MCC' is LONG ISLAND JEWISH MEDICAL CENTER. 
+
+The name of the most expensive provider in New York with DRG code '177 - RESPIRATORY INFECTIONS & INFLAMMATIONS W MCC' is WESTCHESTER MEDICAL CENTER. 
+
